@@ -116,11 +116,11 @@ async function getServices (guser, pkg) {
       },
       badges: [
         {
-          img: `https://david-dm.org/${gha}/tech-js-node_modules-${pkg.name}/status.svg)`,
+          img: `https://david-dm.org/${gha}/tech-js-node_modules-${pkg.name}/status.svg`,
           url: `https://david-dm.org/${gha}/tech-js-node_modules-${pkg.name}`
         },
         {
-          img: `https://david-dm.org/${gha}/tech-js-node_modules-${pkg.name}/dev-status.svg)`,
+          img: `https://david-dm.org/${gha}/tech-js-node_modules-${pkg.name}/dev-status.svg`,
           url: `https://david-dm.org/${gha}/tech-js-node_modules-${pkg.name}?type=dev`
         }
 
