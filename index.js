@@ -168,6 +168,7 @@ async function genReadme (pkg, readme) {
 \`\`\`sh
 npm i ${pkg.preferGlobal ? '-g ' : ''}${pkg.name}
 \`\`\`
+
 `
   }
   if (pkg.browser) {
@@ -176,6 +177,7 @@ npm i ${pkg.preferGlobal ? '-g ' : ''}${pkg.name}
 \`\`\`sh
 curl ${pkg.repository.replace(':', '/').replace(`git@`, 'https://')}/raw/guld/${pkg.browser} -o ${pkg.browser}
 \`\`\`
+
 `
   }
   var usage = `### Usage
@@ -202,14 +204,6 @@ require('${pkg.name}')
     var usages = re.exec(readme)
     if (usages) usage = re.exec(readme)[0].replace(/#{1,2}$/, '')
     else usage = ''
-  }
-  if (pkg.browser) {
-    install = `${install}##### Browser
-
-\`\`\`sh
-curl ${pkg.repository.replace(':', '/').replace(`git@`, 'https://')}/raw/guld/${pkg.browser} -o ${pkg.browser}
-\`\`\`
-`
   }
 
   return `# ${pkg.name}
