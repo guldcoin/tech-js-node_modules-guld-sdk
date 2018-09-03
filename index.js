@@ -199,9 +199,9 @@ require('${pkg.name}')
 \`\`\`
 `
   } else {
-    var re = new RegExp('### Usage[#\\s\\w=+*,(){}\\[\\]!<>&?$`"\'.\\/:@-]*(?=(#{1,3} ))')
+    var re = new RegExp('#{1,3} Usage[#\\s\\w=+*,(){}\\[\\]!<>&?$`"\'.\\/:@-]*(?=(#{1,3} ))')
     var usages = re.exec(readme)
-    if (usages) usage = re.exec(readme)[0].replace(/#{1,2}$/, '')
+    if (usages) usage = re.exec(readme)[0].replace(/#{1,2}$/, '').replace('\n#\n', '\n')
     else usage = ''
   }
 
@@ -273,6 +273,7 @@ async function genPackage (guser, pname, pkg) {
   if (!pkg.devDependencies.hasOwnProperty('eslint-plugin-standard')) pkg.devDependencies['eslint-plugin-standard'] = '^4.0.0'
   if (!pkg.devDependencies.hasOwnProperty('eslint-plugin-json')) pkg.devDependencies['eslint-plugin-json'] = '^1.2.1'
   if (!pkg.devDependencies.hasOwnProperty('pre-commit')) pkg.devDependencies['pre-commit'] = '^1.2.2'
+  if (!pkg.devDependencies.hasOwnProperty('npm-check-updates')) pkg.devDependencies['npm-check-updates'] = '^2.14.2'
   pkg.homepage = getHomepage(pname)
   pkg.repository = getRepository(pname, bba)
   pkg.keywords = pkg.keywords || ['guld']
@@ -296,10 +297,8 @@ async function genPackage (guser, pname, pkg) {
       pkg.main = pkg.main || 'index.js'
     } else if (pkg.main) delete pkg.main
     if (pkg.keywords.indexOf('browser') >= 0) {
-      pkg.browser = `${pkg.name}.min.js`
+      pkg.browser = pkg.browser || `${pkg.name}.min.js`
       pkg.scripts.build = 'webpack'
-      // default to global cached versions of these large deps
-      pkg.scripts.preinstall = 'npm link mochify; npm link puppeteer'
       if (!pkg.devDependencies.hasOwnProperty('webpack')) pkg.devDependencies['webpack'] = '^0.0.1'
       if (!pkg.devDependencies.hasOwnProperty('mochify')) pkg.devDependencies['mochify'] = '^0.0.1'
       if (!pkg.devDependencies.hasOwnProperty('puppeteer')) pkg.devDependencies['puppeteer'] = '^0.0.1'
@@ -337,6 +336,7 @@ async function genEslint (pkg, rc) {
 
 async function genTravis (pname) {
   pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json')).name
+  thisMetaPkg = await getMetaPkg()
   return await readThenClose(`${process.cwd()}/.travis.yml`, 'utf-8').catch(e => { return thisMetaPkg.travis.replace(/guld-sdk/g, pname) }) || thisMetaPkg.travis.replace(/guld-sdk/g, pname)
 }
 
