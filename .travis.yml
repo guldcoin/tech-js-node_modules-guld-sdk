@@ -3,15 +3,15 @@ node_js:
   - "10"
 sudo: false
 before_install:
-  mkdir -p ~/tech/js/node_modules
-  cd ~/tech/js/node_modules
-  git clone https://bitbucket.org/guld/tech-js-node_modules-guld-sdk guld-sdk
+  mkdir -p ~/tech/js/node_modules;
+  cd ~/tech/js/node_modules;
+  git clone https://bitbucket.org/guld/tech-js-node_modules-guld-sdk guld-sdk;
 install:
-  cd ~/tech/js/node_modules/guld-sdk
-  npm i
+  cd ~/tech/js/node_modules/guld-sdk;
+  npm i;
 script:
-  cd ~/tech/js/node_modules/guld-sdk
-  npm run test:lint
+  cd ~/tech/js/node_modules/guld-sdk;
+  npm run test:lint;
 cache:
   directories:
     - node_modules
