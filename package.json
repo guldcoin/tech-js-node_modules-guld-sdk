@@ -18,7 +18,7 @@
   "dependencies": {
     "got": "^9.2.0",
     "guld-fs": "^1.3.2",
-    "guld-git-host-cli": "^1.3.13",
+    "guld-git-host-cli": "^1.3.14",
     "guld-git-remote-cli": "^1.1.0",
     "guld-spawn": "^2.0.2",
     "lodash.camelcase": "^4.3.0",
