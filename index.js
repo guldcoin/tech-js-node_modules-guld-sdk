@@ -158,7 +158,6 @@ async function genReadme (pkg, readme) {
   pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json')
   readme = readme || await readThenClose(`${process.cwd()}/README.md`, 'utf-8')
   var bdgs = await genBadges()
-  var mod = require(pkg.name)
   var install = `### Install
 
 `
@@ -184,7 +183,7 @@ curl ${pkg.repository.replace(':', '/').replace(`git@`, 'https://')}/raw/guld/${
 
 `
   if (pkg.bin) {
-    var halp = await new Promise(resolve => mod.outputHelp(resolve))
+    var halp = await new Promise(resolve => require(pkg.name).outputHelp(resolve))
     usage = `${usage}##### CLI
 
 \`\`\`sh
@@ -294,7 +293,7 @@ async function genPackage (guser, pname, pkg) {
     if (!pkg.devDependencies.hasOwnProperty('puppeteer')) pkg.devDependencies['puppeteer'] = '^0.0.1'
   } else {
     if (pkg.keywords.indexOf('node') >= 0) {
-      pkg.main = 'index.js'
+      pkg.main = pkg.main || 'index.js'
     } else if (pkg.main) delete pkg.main
     if (pkg.keywords.indexOf('browser') >= 0) {
       pkg.browser = `${pkg.name}.min.js`
@@ -430,8 +429,15 @@ async function publish (guser, pname) {
   fs = fs || await getFS()
   pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })).name
   guser = guser || await getName()
+  var bba = await getAlias(guser, 'bitbucket')
   process.chdir(getPath(pname))
   await spawn('npm', '', ['publish'], true)
+  await spawn('git', '', ['push', guser, guser], true)
+  process.chdir(getPath(''))
+  await spawn('git', '', ['init'], true)
+  await spawn('git', '', ['submodule', 'add', `https://bitbucket.org/${bba}/tech-js-node_modules-${pname}`, pname], true)
+  await spawn('git', '', ['add', pname], true)
+  await spawn('git', '', ['commit', '-m', `update ${pname}`], true)
   await spawn('git', '', ['push', guser, guser], true)
   process.chdir(getPath('guld-docs'))
   await spawn('npm', '', ['run', 'build-tech'], true)
