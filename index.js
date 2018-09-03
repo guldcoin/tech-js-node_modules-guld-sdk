@@ -36,6 +36,10 @@ async function readThenClose (fpath, encoding) {
   } else return buffer
 }
 
+function getPath (pname) {
+  return path.join(os.homedir(), 'tech', 'js', 'node_modules', pname)
+}
+
 async function getMetaPkg () {
   if (!thisMetaPkg.hasOwnProperty('license') || !thisMetaPkg.hasOwnProperty('gitignore') || !thisMetaPkg.hasOwnProperty('travis')) {
     thisMetaPkg.license = await readThenClose('LICENSE', 'utf-8')
@@ -359,9 +363,9 @@ async function init (guser, pname) {
   fs = fs || await getFS()
   pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })).name
   guser = guser || await getName()
-  var pdir = path.join(os.homedir(), 'tech', 'js', 'node_modules', pname)
+  var pdir = getPath(pname)
   await fs.mkdirp(path.join(pdir, 'test'))
-  process.chdir(path.join(os.homedir(), 'tech', 'js', 'node_modules', pname))
+  process.chdir(pdir)
   await spawn('git', '', ['init'], true)
   await spawn('guld-git-remote', '', ['delete'], true)
   await spawn('guld-git-remote', '', ['add'], true)
@@ -397,25 +401,25 @@ async function version (guser, pname, level = 'patch') {
   fs = fs || await getFS()
   pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })).name
   guser = guser || await getName()
-  process.chdir(path.join(os.homedir(), 'tech', 'js', 'node_modules', pname))
+  process.chdir(getPath(pname))
   await spawn('npm', '', ['version', level], true)
   await publish(guser, pname)
- 
+}
 
 async function publish (guser, pname) {
   fs = fs || await getFS()
   pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })).name
   guser = guser || await getName()
-  process.chdir(path.join(os.homedir(), 'tech', 'js', 'node_modules', pname))
+  process.chdir(getPath(pname))
   await spawn('npm', '', ['publish'], true)
   await spawn('git', '', ['push', guser, guser], true)
-}}
+}
 
 async function deprecate (guser, pname, message = 'No longer maintained.') {
   fs = fs || await getFS()
   pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })).name
   guser = guser || await getName()
-  var pkgpath = path.join(os.homedir(), 'tech', 'js', 'node_modules', pname)
+  var pkgpath = getPath(pname)
   process.chdir(pkgpath)
   var pkg = await genPackage(guser, pname)
   if (pkg.description.indexOf('DEPRECATED') === -1) {
@@ -430,6 +434,7 @@ async function deprecate (guser, pname, message = 'No longer maintained.') {
 }
 
 module.exports = {
+  getPath: getPath,
   getMetaPkg: getMetaPkg,
   genBadges: genBadges,
   genReadme: genReadme,
