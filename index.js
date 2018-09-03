@@ -361,6 +361,11 @@ async function init (guser, pname) {
   await fs.writeFile('LICENSE', await genLicense(guser))
   await fs.writeFile('.gitignore', await genGitignore())
   await fs.writeFile('.npmignore', await genNpmignore())
+  await spawn('git', '', ['add', '-A'], true)
+  if (await spawn('git', '', ['status', '-s'], true) !== '') {
+    await spawn('git', '', ['commit', '-m', 'init'], true)
+    await spawn('git', '', ['push', guser, guser], true)
+  }
   var services = await getServices(guser, pkg)
   await Promise.all(Object.keys(services).map(s => services[s].activate()))
   return pkg
