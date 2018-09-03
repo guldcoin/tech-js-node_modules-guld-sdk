@@ -154,6 +154,7 @@ async function genReadme (pkg, readme) {
   pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json')
   readme = readme || await readThenClose(`${process.cwd()}/README.md`, 'utf-8')
   var bdgs = await genBadges()
+  var mod = require(pkg.name)
   var install = `### Install
 
 `
@@ -177,7 +178,7 @@ curl ${pkg.repository.replace(':', '/').replace(`git@`, 'https://')}/raw/guld/${
 
 `
   if (pkg.bin) {
-    var halp = await new Promise(resolve => this.outputHelp(resolve))
+    var halp = await new Promise(resolve => mod.outputHelp(resolve))
     usage = `${usage}##### CLI
 
 \`\`\`sh
@@ -410,6 +411,23 @@ async function publish (guser, pname) {
   await spawn('npm', '', ['publish'], true)
 }
 
+async function deprecate (guser, pname, message = 'No longer maintained.') {
+  fs = fs || await getFS()
+  pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })).name
+  guser = guser || await getName()
+  var pkgpath = path.join(os.homedir(), 'tech', 'js', 'node_modules', pname)
+  process.chdir(pkgpath)
+  var pkg = await genPackage(guser, pname)
+  if (pkg.description.indexOf('DEPRECATED') === -1) {
+    pkg.description = `DEPRECATED ${message}\n\n${pkg.description}`
+    await fs.writeFile('package.json', `${JSON.stringify(pkg, null, 2)}\n`)
+    await fs.writeFile('README.md', await genReadme(pkg))
+    await spawn('git', '', ['add', 'package.json', 'README.md'], true)
+    await spawn('git', '', ['commit', '-m', 'deprecated'], true)
+  }
+  await spawn('npm', '', ['deprecate', pname, message], true)
+}
+
 module.exports = {
   getMetaPkg: getMetaPkg,
   genBadges: genBadges,
@@ -423,5 +441,6 @@ module.exports = {
   init: init,
   version: version,
   publish: publish,
+  deprecate: deprecate,
   readThenClose: readThenClose
 }
