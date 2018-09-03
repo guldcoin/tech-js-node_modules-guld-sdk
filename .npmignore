@@ -1,0 +1,8 @@
+!.gitignore
+!.eslintrc.json
+!package.json
+!.travis.yml
+!LICENSE
+test
+*.min.js
+

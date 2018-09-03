@@ -1,0 +1,41 @@
+{
+  "name": "guld-sdk",
+  "readme": "README.md",
+  "author": "guld",
+  "license": "MIT",
+  "description": "Software Developer Kit for guld JS packages.",
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=7"
+  },
+  "scripts": {
+    "test": "mocha test/*.js",
+    "lint": "eslint *.js* test/*.js",
+    "fix": "eslint --fix *.js* test/*.js",
+    "test:lint": "npm run lint && npm run test"
+  },
+  "dependencies": {
+    "guld-fs": "^1.3.0",
+    "guld-spawn": "^2.0.2",
+    "lodash.camelcase": "^4.3.0",
+    "opn": "^5.3.0"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^5.2.0",
+    "eslint": "^5.5.0",
+    "eslint-config-standard": "^12.0.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-node": "^7.0.0",
+    "eslint-plugin-promise": "^4.0.0",
+    "eslint-plugin-standard": "^4.0.0",
+    "eslint-plugin-json": "^1.2.1",
+    "pre-commit": "^1.2.2"
+  },
+  "homepage": "https://guld.tech/lib/guld-sdk.html",
+  "repository": "https://bitbucket.org/guld/tech-js-node_modules-guld-sdk",
+  "keywords": [
+    "guld",
+    "sdk"
+  ]
+}
