@@ -309,6 +309,7 @@ async function genPackage (guser, pname, pkg) {
   if (isSDK(pname)) {
     if (pkg.keywords.indexOf('sdk') === -1) pkg.keywords.push('sdk')
   }
+  pkg['pre-commit'] = pkg['pre-commit'] || ['test:lint']
   return pkg
 }
 
@@ -391,11 +392,10 @@ async function init (guser, pname) {
   return pkg
 }
 
-async function version (guser, pname, level='patch') {
+async function version (guser, pname, level = 'patch') {
   fs = fs || await getFS()
   pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })).name
   guser = guser || await getName()
-  var pdir = path.join(os.homedir(), 'tech', 'js', 'node_modules', pname)
   process.chdir(path.join(os.homedir(), 'tech', 'js', 'node_modules', pname))
   await spawn('npm', '', ['version', level], true)
   await publish(guser, pname)

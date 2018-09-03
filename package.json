@@ -38,5 +38,8 @@
   "keywords": [
     "guld",
     "sdk"
+  ],
+  "pre-commit": [
+    "test:lint"
   ]
 }
