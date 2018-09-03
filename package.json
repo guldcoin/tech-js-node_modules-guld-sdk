@@ -32,7 +32,8 @@
     "eslint-plugin-promise": "^4.0.0",
     "eslint-plugin-standard": "^4.0.0",
     "mocha": "^5.2.0",
-    "pre-commit": "^1.2.2"
+    "pre-commit": "^1.2.2",
+    "npm-check-updates": "^2.14.2"
   },
   "homepage": "https://guld.tech/lib/guld-sdk.html",
   "repository": "https://bitbucket.org/guld/tech-js-node_modules-guld-sdk",
