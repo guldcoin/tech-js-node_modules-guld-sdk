@@ -433,6 +433,12 @@ async function publish (guser, pname) {
   process.chdir(getPath(pname))
   await spawn('npm', '', ['publish'], true)
   await spawn('git', '', ['push', guser, guser], true)
+  process.chdir(getPath('guld-docs'))
+  await spawn('npm', '', ['run', 'build-tech'], true)
+  process.chdir(path.join(os.homedir(), 'io', 'http', 'guld.tech'))
+  await spawn('git', '', ['add', '-A'], true)
+  await spawn('git', '', ['commit', '-m', `built ${pname}`], true)
+  await spawn('git', '', ['push', guser, guser], true)
 }
 
 async function deprecate (guser, pname, message = 'No longer maintained.') {
