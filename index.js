@@ -356,6 +356,28 @@ async function genNpmignore () {
   return await readThenClose(`${process.cwd()}/.npmignore`, 'utf-8').catch(e => 'test\n*.min.js\n') || 'test\n*.min.js\n'
 }
 
+async function genWepack (pkg) {
+  fs = fs || await getFS()
+  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} }) || {}
+  var defaultCfg = `module.exports = [
+  {
+    mode: 'production',
+    target: 'web',
+    entry: {
+      index: './index.js'
+    },
+    output: {
+      filename: '${pkg.name}.min.js',
+      path: __dirname,
+      library: '${camelcase(pkg.name)}',
+      libraryTarget: 'var'
+    }
+  }
+]
+`
+  return await readThenClose(`${process.cwd()}/webpack.config.js`, 'utf-8').catch(e => { return defaultCfg }) || defaultCfg
+}
+
 async function init (guser, pname) {
   fs = fs || await getFS()
   pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })).name
@@ -377,6 +399,7 @@ async function init (guser, pname) {
   await fs.writeFile('LICENSE', await genLicense(guser))
   await fs.writeFile('.gitignore', await genGitignore())
   await fs.writeFile('.npmignore', await genNpmignore())
+  if (pkg.keywords.indexOf('browser') !== -1 || pkg.browser) await fs.writeFile('webpack.config.js', await genWepack(pkg))
   var status = (await spawn('git', '', ['status', '-s'], true)).trim()
   if (status.indexOf('package.json') !== -1 ||
       status.indexOf('README.md') !== -1 ||
