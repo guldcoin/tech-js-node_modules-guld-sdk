@@ -1,5 +1,7 @@
 const opn = require('opn')
+const got = require('got')
 const os = require('os')
+const path = require('path')
 const camelcase = require('lodash.camelcase')
 const { getFS } = require('guld-fs')
 // const { getName, getAlias } = require('guld-user')
@@ -31,8 +33,7 @@ async function readThenClose (fpath, encoding) {
   if (encoding) {
     if (encoding === 'json') return JSON.parse(buffer.toString('utf-8', 0, buffer.length))
     else return buffer.toString(encoding, 0, buffer.length)
-  }
-  else return buffer
+  } else return buffer
 }
 
 async function getMetaPkg () {
@@ -69,7 +70,12 @@ async function getServices (guser, pkg) {
       description: 'Test and Deploy with Confidence.',
       url: 'https://travis-ci.org',
       activate: async function () {
-        return opn(`https://travis-ci.org/${gha}/tech-js-node_modules-${pkg.name}`)
+        var url = `https://travis-ci.org/${gha}/tech-js-node_modules-${pkg.name}`
+        try {
+          await got(url)
+        } catch (e) {
+          await opn(url)
+        }
       },
       badges: [
         {
@@ -83,7 +89,11 @@ async function getServices (guser, pkg) {
       description: 'Find and prevent zero-days and other critical bugs, with customizable alerts and automated code review.',
       url: 'https://lgtm.com',
       activate: async function () {
-        return opn('https://lgtm.com/dashboard')
+        try {
+          await got(`https://lgtm.com/projects/b/${bba}/tech-js-node_modules-${pkg.name}`)
+        } catch (e) {
+          await opn('https://lgtm.com/dashboard')
+        }
       },
       badges: [
         {
@@ -97,7 +107,12 @@ async function getServices (guser, pkg) {
       description: 'Watching your node.js dependencies.',
       url: 'https://david-dm.org',
       activate: async function () {
-        return opn(`https://david-dm.org/${gha}/tech-js-node_modules-${pkg.name}`)
+        var url = `https://david-dm.org/${gha}/tech-js-node_modules-${pkg.name}`
+        try {
+          await got(url)
+        } catch (e) {
+          await opn(url)
+        }
       },
       badges: [
         {
@@ -134,9 +149,8 @@ async function genBadges (guser, pkg) {
 `.replace('\n\n\n', '\n\n')
 }
 
-async function genReadme (guser, pkg, readme) {
+async function genReadme (pkg, readme) {
   fs = fs || await getFS()
-  guser = guser || await getName()
   pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json')
   readme = readme || await readThenClose(`${process.cwd()}/README.md`, 'utf-8')
   var bdgs = await genBadges()
@@ -230,7 +244,7 @@ function getRepository (pname, bba) {
 
 async function genPackage (guser, pname, pkg) {
   fs = fs || await getFS()
-  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => {return {}}) || {}
+  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} }) || {}
   pname = pname || pkg.name
   guser = guser || await getName()
   // var gha = await getAlias(guser, 'github')
@@ -273,9 +287,9 @@ async function genPackage (guser, pname, pkg) {
     delete pkg.browser
   } else if (isApp(pname)) {
     if (pkg.keywords.indexOf('app') === -1) pkg.keywords.push('app')
-      pkg.scripts.preinstall = 'npm link mochify; npm link puppeteer'
-      if (!pkg.devDependencies.hasOwnProperty('mochify')) pkg.devDependencies['mochify'] = '^0.0.1'
-      if (!pkg.devDependencies.hasOwnProperty('puppeteer')) pkg.devDependencies['puppeteer'] = '^0.0.1'
+    pkg.scripts.preinstall = 'npm link mochify; npm link puppeteer'
+    if (!pkg.devDependencies.hasOwnProperty('mochify')) pkg.devDependencies['mochify'] = '^0.0.1'
+    if (!pkg.devDependencies.hasOwnProperty('puppeteer')) pkg.devDependencies['puppeteer'] = '^0.0.1'
   } else {
     if (pkg.keywords.indexOf('node') >= 0) {
       pkg.main = 'index.js'
@@ -298,20 +312,19 @@ async function genPackage (guser, pname, pkg) {
   return pkg
 }
 
-async function genEslint (guser, pkg, rc) {
+async function genEslint (pkg, rc) {
   fs = fs || await getFS()
-  guser = guser || await getName()
-  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => {return {}}) || {}
-  rc = rc || await readThenClose(`${process.cwd()}/.eslintrc.json`, 'json').catch(e => {return {}}) || {}
+  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} }) || {}
+  rc = rc || await readThenClose(`${process.cwd()}/.eslintrc.json`, 'json').catch(e => { return {} }) || {}
   rc.extends = rc.extends || []
   if (rc.extends.indexOf('eslint:recommended') === -1) rc.extends.push('eslint:recommended')
   if (rc.extends.indexOf('standard') === -1) rc.extends.push('standard')
   rc.plugins = rc.plugins || []
   if (rc.plugins.indexOf('json') === -1) rc.plugins.push('json')
   rc.rules = rc.rules || {}
-  if (!rc.rules.hasOwnProperty('linebreak-style')) rc.rules['linebreak-style'] = ["error", "unix"]
-  if (!rc.rules.hasOwnProperty('camelcase')) rc.rules['camelcase'] = ["error", {"properties": "always"}]
-  if (!rc.rules.hasOwnProperty('prefer-template')) rc.rules['prefer-template'] = "error"
+  if (!rc.rules.hasOwnProperty('linebreak-style')) rc.rules['linebreak-style'] = ['error', 'unix']
+  if (!rc.rules.hasOwnProperty('camelcase')) rc.rules['camelcase'] = ['error', { 'properties': 'always' }]
+  if (!rc.rules.hasOwnProperty('prefer-template')) rc.rules['prefer-template'] = 'error'
   if (isCLI(pkg.name)) {
     rc.globals = rc.globals || {}
     var cc = camelcase(pkg.name)
@@ -321,19 +334,18 @@ async function genEslint (guser, pkg, rc) {
 }
 
 async function genTravis () {
-  return await readThenClose(`${process.cwd()}/.travis.yml`, 'utf-8').catch(e => {return thisMetaPkg.travis}) || thisMetaPkg.travis
+  return await readThenClose(`${process.cwd()}/.travis.yml`, 'utf-8').catch(e => { return thisMetaPkg.travis }) || thisMetaPkg.travis
 }
-
 
 async function genLicense (guser) {
   guser = guser || await getName()
-  defaultLicense = (await getMetaPkg()).license.replace(/Copyright.*/, `Copyright (c) ${(new Date()).getFullYear()} ${guser}`)
-  return await readThenClose(`${process.cwd()}/LICENSE`, 'utf-8').catch(e => {return defaultLicense}) || defaultLicense
+  var defaultLicense = (await getMetaPkg()).license.replace(/Copyright.*/, `Copyright (c) ${(new Date()).getFullYear()} ${guser}`)
+  return await readThenClose(`${process.cwd()}/LICENSE`, 'utf-8').catch(e => { return defaultLicense }) || defaultLicense
 }
 
 async function genGitignore () {
   thisMetaPkg = await getMetaPkg()
-  return await readThenClose(`${process.cwd()}/.gitignore`, 'utf-8').catch(e => {return thisMetaPkg.gitignore}) || thisMetaPkg.gitignore
+  return await readThenClose(`${process.cwd()}/.gitignore`, 'utf-8').catch(e => { return thisMetaPkg.gitignore }) || thisMetaPkg.gitignore
 }
 
 async function genNpmignore () {
@@ -342,7 +354,7 @@ async function genNpmignore () {
 
 async function init (guser, pname) {
   fs = fs || await getFS()
-  pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => {return {}})).name
+  pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })).name
   guser = guser || await getName()
   var pdir = path.join(os.homedir(), 'tech', 'js', 'node_modules', pname)
   await fs.mkdirp(path.join(pdir, 'test'))
@@ -355,14 +367,21 @@ async function init (guser, pname) {
   await spawn('guld-git', '', ['host', '-u', guser, 'repo-create'], true)
   var pkg = await genPackage(guser, pname)
   await fs.writeFile('package.json', JSON.stringify(pkg, null, 2))
-  await fs.writeFile('.eslintrc.json', JSON.stringify(await genEslint(guser, pkg), null, 2))
-  await fs.writeFile('README.md', await genReadme(guser, pkg))
+  await fs.writeFile('.eslintrc.json', JSON.stringify(await genEslint(pkg), null, 2))
+  await fs.writeFile('README.md', await genReadme(pkg))
   await fs.writeFile('.travis.yml', await genTravis())
   await fs.writeFile('LICENSE', await genLicense(guser))
   await fs.writeFile('.gitignore', await genGitignore())
   await fs.writeFile('.npmignore', await genNpmignore())
-  await spawn('git', '', ['add', '-A'], true)
-  if (await spawn('git', '', ['status', '-s'], true) !== '') {
+  var status = (await spawn('git', '', ['status', '-s'], true)).trim()
+  if (status.indexOf('package.json') !== -1 ||
+      status.indexOf('README.md') !== -1 ||
+      status.indexOf('.travis.yml') !== -1 ||
+      status.indexOf('.gitignore') !== -1 ||
+      status.indexOf('.npmignore') !== -1 ||
+      status.indexOf('.eslintrc.json') !== -1 ||
+      status.indexOf('webpack.json') !== -1) {
+    await spawn('git', '', ['add', 'package.json', 'README.md', 'test', '.travis.yml', 'LICENSE', '.gitignore', '.npmignore', '.eslintrc.json'], true)
     await spawn('git', '', ['commit', '-m', 'init'], true)
     await spawn('git', '', ['push', guser, guser], true)
   }
