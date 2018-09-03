@@ -391,6 +391,25 @@ async function init (guser, pname) {
   return pkg
 }
 
+async function version (guser, pname, level='patch') {
+  fs = fs || await getFS()
+  pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })).name
+  guser = guser || await getName()
+  var pdir = path.join(os.homedir(), 'tech', 'js', 'node_modules', pname)
+  process.chdir(path.join(os.homedir(), 'tech', 'js', 'node_modules', pname))
+  await spawn('npm', '', ['version', level], true)
+  await publish(guser, pname)
+  await spawn('git', '', ['push', guser, guser], true)
+}
+
+async function publish (guser, pname) {
+  fs = fs || await getFS()
+  pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })).name
+  guser = guser || await getName()
+  process.chdir(path.join(os.homedir(), 'tech', 'js', 'node_modules', pname))
+  await spawn('npm', '', ['publish'], true)
+}
+
 module.exports = {
   getMetaPkg: getMetaPkg,
   genBadges: genBadges,
@@ -402,5 +421,7 @@ module.exports = {
   genGitignore: genGitignore,
   genNpmignore: genNpmignore,
   init: init,
+  version: version,
+  publish: publish,
   readThenClose: readThenClose
 }
