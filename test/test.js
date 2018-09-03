@@ -57,5 +57,6 @@ describe('guld-sdk', function () {
     chai.assert.exists(new RegExp('.*test\\n\\*\\.min\\.js\\n.*').exec(npmignore))
   })
   it('init', async function () {
+    await guldSDK.init('guld', 'guld-xyz')
   })
 })
