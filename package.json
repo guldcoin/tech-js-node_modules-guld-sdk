@@ -1,6 +1,7 @@
 {
   "name": "guld-sdk",
   "readme": "README.md",
+  "main": "index.js",
   "author": "guld",
   "license": "MIT",
   "description": "Software Developer Kit for guld JS packages.",
@@ -37,6 +38,7 @@
   "repository": "https://bitbucket.org/guld/tech-js-node_modules-guld-sdk",
   "keywords": [
     "guld",
+    "node",
     "sdk"
   ],
   "pre-commit": [

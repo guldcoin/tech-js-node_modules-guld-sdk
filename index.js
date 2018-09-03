@@ -278,8 +278,11 @@ async function genPackage (guser, pname, pkg) {
   pkg.repository = getRepository(pname, bba)
   pkg.keywords = pkg.keywords || ['guld']
   if (pkg.keywords.indexOf('guld') === -1) pkg.keywords.push('guld')
+  if (pkg.browser && pkg.keywords.indexOf('browser') === -1) pkg.keywords.push('browser')
+  if (pkg.main && pkg.keywords.indexOf('node') === -1) pkg.keywords.push('node')
   if (isCLI(pname)) {
     if (pkg.keywords.indexOf('cli') === -1) pkg.keywords.push('cli')
+    if (pkg.keywords.indexOf('node') === -1) pkg.keywords.push('node')
     pkg.bin = {}
     pkg.bin[pkg.name.replace('-cli', '')] = 'cli.js'
     delete pkg.main

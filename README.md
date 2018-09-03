@@ -8,6 +8,12 @@ Software Developer Kit for guld JS packages.
 
 ### Install
 
+##### Node
+
+```sh
+npm i guld-sdk
+```
+
 ### Usage
 
 ```
