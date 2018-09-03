@@ -333,8 +333,9 @@ async function genEslint (pkg, rc) {
   return rc
 }
 
-async function genTravis () {
-  return await readThenClose(`${process.cwd()}/.travis.yml`, 'utf-8').catch(e => { return thisMetaPkg.travis }) || thisMetaPkg.travis
+async function genTravis (pname) {
+  pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json')).name
+  return await readThenClose(`${process.cwd()}/.travis.yml`, 'utf-8').catch(e => { return thisMetaPkg.travis.replace(/guld-sdk/g, pname) }) || thisMetaPkg.travis.replace(/guld-sdk/g, pname)
 }
 
 async function genLicense (guser) {
@@ -369,7 +370,7 @@ async function init (guser, pname) {
   await fs.writeFile('package.json', JSON.stringify(pkg, null, 2))
   await fs.writeFile('.eslintrc.json', JSON.stringify(await genEslint(pkg), null, 2))
   await fs.writeFile('README.md', await genReadme(pkg))
-  await fs.writeFile('.travis.yml', await genTravis())
+  await fs.writeFile('.travis.yml', await genTravis(pkg.name))
   await fs.writeFile('LICENSE', await genLicense(guser))
   await fs.writeFile('.gitignore', await genGitignore())
   await fs.writeFile('.npmignore', await genNpmignore())
