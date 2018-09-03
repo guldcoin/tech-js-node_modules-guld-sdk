@@ -400,8 +400,7 @@ async function version (guser, pname, level = 'patch') {
   process.chdir(path.join(os.homedir(), 'tech', 'js', 'node_modules', pname))
   await spawn('npm', '', ['version', level], true)
   await publish(guser, pname)
-  await spawn('git', '', ['push', guser, guser], true)
-}
+ 
 
 async function publish (guser, pname) {
   fs = fs || await getFS()
@@ -409,7 +408,8 @@ async function publish (guser, pname) {
   guser = guser || await getName()
   process.chdir(path.join(os.homedir(), 'tech', 'js', 'node_modules', pname))
   await spawn('npm', '', ['publish'], true)
-}
+  await spawn('git', '', ['push', guser, guser], true)
+}}
 
 async function deprecate (guser, pname, message = 'No longer maintained.') {
   fs = fs || await getFS()
@@ -424,6 +424,7 @@ async function deprecate (guser, pname, message = 'No longer maintained.') {
     await fs.writeFile('README.md', await genReadme(pkg))
     await spawn('git', '', ['add', 'package.json', 'README.md'], true)
     await spawn('git', '', ['commit', '-m', 'deprecated'], true)
+    await spawn('git', '', ['push', guser, guser], true)
   }
   await spawn('npm', '', ['deprecate', pname, message], true)
 }
