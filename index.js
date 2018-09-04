@@ -154,7 +154,16 @@ async function genBadges (guser, pkg) {
 async function genReadme (pkg, readme) {
   fs = fs || await getFS()
   pkg = await gogetpkg(pkg)
+  var license = `### License
+
+${pkg.license} Copyright ${pkg.author}
+`
   readme = readme || await readThenClose(`${process.cwd()}/README.md`, 'utf-8')
+  if (readme.indexOf('### License') === -1) {
+    readme = `${readme}
+
+${license}`.replace(/\n\n\n/g, '\n\n')
+  }
   var bdgs = await genBadges()
   var install = `### Install
 
@@ -199,7 +208,7 @@ require('${pkg.name}')
 \`\`\`
 `
   } else {
-    var re = new RegExp('#{1,3} Usage[#\\s\\w=+*,(){}\\[\\]!<>&?$`"\'.\\/:@-]*(?=(#{1,3} ))')
+    var re = new RegExp('#{1,3} Usage[#\\s\\w=+*,(){}\\[\\]!<>&?$`"\'.\\/:@-]*(?=(\\n#{1,3} ))')
     var usages = re.exec(readme)
     if (usages) usage = re.exec(readme)[0].replace(/#{1,2}$/, '').replace('\n#\n', '\n')
     else usage = ''
@@ -212,11 +221,7 @@ ${pkg.description}
 
 ${install}
 ${usage}
-### License
-
-${pkg.license} Copyright ${pkg.author}
-
-`.replace(/\n\n\n/g, '\n\n')
+${license}`.replace(/\n\n\n/g, '\n\n')
 }
 
 function isCLI (pname) {
@@ -379,6 +384,7 @@ async function init (guser, pkg) {
   guser = guser || await getName()
   var pdir = getPath(pkg.name)
   await fs.mkdirp(path.join(pdir, 'test'))
+  if ((await fs.readdir(path.join(pdir, 'test'))).length === 0) await fs.writeFile(path.join(pdir, 'test', 'test.js'), ``)
   await spawn('git', '', ['init'], true)
   await spawn('guld-git-remote', '', ['delete'], true)
   await spawn('guld-git-remote', '', ['add'], true)
@@ -401,6 +407,7 @@ async function init (guser, pkg) {
       status.indexOf('.gitignore') !== -1 ||
       status.indexOf('.npmignore') !== -1 ||
       status.indexOf('.eslintrc.json') !== -1 ||
+      status.indexOf('test/') !== -1 ||
       status.indexOf('webpack.json') !== -1) {
     await spawn('git', '', ['add', 'package.json', 'README.md', 'test', '.travis.yml', 'LICENSE', '.gitignore', '.npmignore', '.eslintrc.json'], true)
     await spawn('git', '', ['commit', '-m', 'init'], true)

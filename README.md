@@ -31,4 +31,3 @@ const guldSDK = require('guld-sdk')
 ### License
 
 MIT Copyright guld
-
