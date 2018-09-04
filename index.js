@@ -476,17 +476,17 @@ async function upgrade (pkg) {
   return upgraded
 }
 
-async function gogetpkg (pname) {
+async function gogetpkg (pkg) {
   fs = fs || await getFS()
-  if (pname && typeof pname === 'string') {
-    var gpath = getPath(pname)
+  if (pkg && pkg.name && typeof pkg.name === 'string') {
+    var gpath = getPath(pkg.name)
     return readThenClose(`${gpath}/package.json`, 'json').then(async pkg => {
       process.chdir(gpath)
       return pkg
     }).catch(async e => {
       await fs.mkdirp(gpath)
       process.chdir(gpath)
-      return { name: pname }
+      return pkg
     })
   } else return { name: process.cwd().replace(getPath(''), '').replace('/', '') }
 }
