@@ -418,7 +418,7 @@ async function version (guser, pkg, level = 'patch') {
   guser = guser || await getName()
   process.chdir(getPath(pkg.name))
   await spawn('npm', '', ['version', level], true)
-  await publish(guser, pkg.name)
+  await publish(guser, pkg)
 }
 
 async function publish (guser, pkg) {
