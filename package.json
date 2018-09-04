@@ -5,7 +5,7 @@
   "author": "guld",
   "license": "MIT",
   "description": "Software Developer Kit for guld JS packages.",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "engines": {
     "node": ">=7"
   },
