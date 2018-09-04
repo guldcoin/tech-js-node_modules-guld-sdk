@@ -1,17 +1,11 @@
 const opn = require('opn')
 const got = require('got')
+const ncu = require('npm-check-updates')
 const os = require('os')
 const path = require('path')
 const camelcase = require('lodash.camelcase')
 const { getFS } = require('guld-fs')
-// const { getName, getAlias } = require('guld-user')
-async function getName () {
-  return 'guld'
-}
-async function getAlias (gname, service) {
-  if (service === 'github') return 'guldcoin'
-  else return 'guld'
-}
+const { getName, getAlias } = require('guld-user')
 const spawn = require('guld-spawn').getSpawn()
 var thisMetaPkg = {
   pkg: require(`${__dirname}/package.json`),
@@ -22,18 +16,22 @@ var fs
 // TODO move this to flexfs and guld-fs
 async function readThenClose (fpath, encoding) {
   fs = fs || await getFS()
-  var stats = await fs.stat(fpath)
-  // open the file (getting a file descriptor to it)
-  var fd = await fs.open(fpath, 'r')
-  var buffer = Buffer.alloc(stats.size)
+  var stats = await fs.stat(fpath).catch(e => null)
+  if (stats) {
+    // open the file (getting a file descriptor to it)
+    var fd = await fs.open(fpath, 'r').catch(e => null)
+    if (fd) {
+      var buffer = Buffer.alloc(stats.size)
 
-  // read its contents into buffer
-  await fs.read(fd, buffer, 0, buffer.length, null)
-  await fs.close(fd)
-  if (encoding) {
-    if (encoding === 'json') return JSON.parse(buffer.toString('utf-8', 0, buffer.length))
-    else return buffer.toString(encoding, 0, buffer.length)
-  } else return buffer
+      // read its contents into buffer
+      await fs.read(fd, buffer, 0, buffer.length, null)
+      await fs.close(fd)
+      if (encoding) {
+        if (encoding === 'json') return JSON.parse(buffer.toString('utf-8', 0, buffer.length))
+        else return buffer.toString(encoding, 0, buffer.length)
+      } else return buffer
+    }
+  }
 }
 
 function getPath (pname) {
@@ -42,9 +40,9 @@ function getPath (pname) {
 
 async function getMetaPkg () {
   if (!thisMetaPkg.hasOwnProperty('license') || !thisMetaPkg.hasOwnProperty('gitignore') || !thisMetaPkg.hasOwnProperty('travis')) {
-    thisMetaPkg.license = await readThenClose('LICENSE', 'utf-8')
-    thisMetaPkg.gitignore = await readThenClose('.gitignore', 'utf-8')
-    thisMetaPkg.travis = await readThenClose('.travis.yml', 'utf-8')
+    thisMetaPkg.license = await readThenClose(`${__dirname}/LICENSE`, 'utf-8')
+    thisMetaPkg.gitignore = await readThenClose(`${__dirname}/.gitignore`, 'utf-8')
+    thisMetaPkg.travis = await readThenClose(`${__dirname}/.travis.yml`, 'utf-8')
   }
   return thisMetaPkg
 }
@@ -183,7 +181,9 @@ curl ${pkg.repository.replace(':', '/').replace(`git@`, 'https://')}/raw/guld/${
 
 `
   if (pkg.bin) {
-    var halp = await new Promise(resolve => require(pkg.name).outputHelp(resolve))
+    var halp = await new Promise(resolve => {
+      require(path.join(getPath(pkg.name), 'cli.js')).outputHelp(resolve)
+    })
     usage = `${usage}##### CLI
 
 \`\`\`sh
@@ -240,14 +240,11 @@ function getRepository (pname, bba) {
   return `https://bitbucket.org/${bba}/tech-js-node_modules-${pname}`
 }
 
-async function genPackage (guser, pname, pkg) {
+async function genPackage (guser, pkg) {
   fs = fs || await getFS()
   pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} }) || {}
-  pname = pname || pkg.name
   guser = guser || await getName()
-  // var gha = await getAlias(guser, 'github')
   var bba = await getAlias(guser, 'bitbucket')
-  pkg.name = pname
   pkg.readme = 'README.md'
   pkg.author = pkg.author || guser
   pkg.license = pkg.license || 'MIT'
@@ -273,21 +270,20 @@ async function genPackage (guser, pname, pkg) {
   if (!pkg.devDependencies.hasOwnProperty('eslint-plugin-standard')) pkg.devDependencies['eslint-plugin-standard'] = '^4.0.0'
   if (!pkg.devDependencies.hasOwnProperty('eslint-plugin-json')) pkg.devDependencies['eslint-plugin-json'] = '^1.2.1'
   if (!pkg.devDependencies.hasOwnProperty('pre-commit')) pkg.devDependencies['pre-commit'] = '^1.2.2'
-  if (!pkg.devDependencies.hasOwnProperty('npm-check-updates')) pkg.devDependencies['npm-check-updates'] = '^2.14.2'
-  pkg.homepage = getHomepage(pname)
-  pkg.repository = getRepository(pname, bba)
+  pkg.homepage = getHomepage(pkg.name)
+  pkg.repository = getRepository(pkg.name, bba)
   pkg.keywords = pkg.keywords || ['guld']
   if (pkg.keywords.indexOf('guld') === -1) pkg.keywords.push('guld')
   if (pkg.browser && pkg.keywords.indexOf('browser') === -1) pkg.keywords.push('browser')
   if (pkg.main && pkg.keywords.indexOf('node') === -1) pkg.keywords.push('node')
-  if (isCLI(pname)) {
+  if (isCLI(pkg.name)) {
     if (pkg.keywords.indexOf('cli') === -1) pkg.keywords.push('cli')
     if (pkg.keywords.indexOf('node') === -1) pkg.keywords.push('node')
     pkg.bin = {}
     pkg.bin[pkg.name.replace('-cli', '')] = 'cli.js'
     delete pkg.main
     delete pkg.browser
-  } else if (isApp(pname)) {
+  } else if (isApp(pkg.name)) {
     if (pkg.keywords.indexOf('app') === -1) pkg.keywords.push('app')
     pkg.scripts.preinstall = 'npm link mochify; npm link puppeteer'
     if (!pkg.devDependencies.hasOwnProperty('mochify')) pkg.devDependencies['mochify'] = '^0.0.1'
@@ -306,7 +302,7 @@ async function genPackage (guser, pname, pkg) {
       if (pkg.eslintIgnore.indexOf('*.min.js') === -1) pkg.eslintIgnore.push('*.min.js')
     } else if (pkg.browser) delete pkg.browser
   }
-  if (isSDK(pname)) {
+  if (isSDK(pkg.name)) {
     if (pkg.keywords.indexOf('sdk') === -1) pkg.keywords.push('sdk')
   }
   pkg['pre-commit'] = pkg['pre-commit'] || ['test:lint']
@@ -334,10 +330,10 @@ async function genEslint (pkg, rc) {
   return rc
 }
 
-async function genTravis (pname) {
-  pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json')).name
+async function genTravis (pkg) {
+  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json')
   thisMetaPkg = await getMetaPkg()
-  return await readThenClose(`${process.cwd()}/.travis.yml`, 'utf-8').catch(e => { return thisMetaPkg.travis.replace(/guld-sdk/g, pname) }) || thisMetaPkg.travis.replace(/guld-sdk/g, pname)
+  return await readThenClose(`${process.cwd()}/.travis.yml`, 'utf-8').catch(e => { return thisMetaPkg.travis.replace(/guld-sdk/g, pkg.name) }) || thisMetaPkg.travis.replace(/guld-sdk/g, pkg.name)
 }
 
 async function genLicense (guser) {
@@ -377,11 +373,11 @@ async function genWepack (pkg) {
   return await readThenClose(`${process.cwd()}/webpack.config.js`, 'utf-8').catch(e => { return defaultCfg }) || defaultCfg
 }
 
-async function init (guser, pname) {
+async function init (guser, pkg) {
   fs = fs || await getFS()
-  pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })).name
+  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })
   guser = guser || await getName()
-  var pdir = getPath(pname)
+  var pdir = getPath(pkg.name)
   await fs.mkdirp(path.join(pdir, 'test'))
   process.chdir(pdir)
   await spawn('git', '', ['init'], true)
@@ -390,7 +386,7 @@ async function init (guser, pname) {
   await spawn('git', '', ['checkout', '-b', guser], true)
   await spawn('git', '', ['checkout', guser], true)
   await spawn('guld-git-host', '', ['-u', guser, 'repo-create'], true)
-  var pkg = await genPackage(guser, pname)
+  pkg = await genPackage(guser, pkg)
   await fs.writeFile('package.json', `${JSON.stringify(pkg, null, 2)}\n`)
   await fs.writeFile('.eslintrc.json', `${JSON.stringify(await genEslint(pkg), null, 2)}\n`)
   await fs.writeFile('README.md', await genReadme(pkg))
@@ -416,44 +412,44 @@ async function init (guser, pname) {
   return pkg
 }
 
-async function version (guser, pname, level = 'patch') {
+async function version (guser, pkg, level = 'patch') {
   fs = fs || await getFS()
-  pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })).name
+  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })
   guser = guser || await getName()
-  process.chdir(getPath(pname))
+  process.chdir(getPath(pkg.name))
   await spawn('npm', '', ['version', level], true)
-  await publish(guser, pname)
+  await publish(guser, pkg.name)
 }
 
-async function publish (guser, pname) {
+async function publish (guser, pkg) {
   fs = fs || await getFS()
-  pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })).name
+  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })
   guser = guser || await getName()
   var bba = await getAlias(guser, 'bitbucket')
-  process.chdir(getPath(pname))
+  process.chdir(getPath(pkg.name))
   await spawn('npm', '', ['publish'], true)
   await spawn('git', '', ['push', guser, guser], true)
   process.chdir(getPath(''))
   await spawn('git', '', ['init'], true)
-  await spawn('git', '', ['submodule', 'add', `https://bitbucket.org/${bba}/tech-js-node_modules-${pname}`, pname], true)
-  await spawn('git', '', ['add', pname], true)
-  await spawn('git', '', ['commit', '-m', `update ${pname}`], true)
+  await spawn('git', '', ['submodule', 'add', `https://bitbucket.org/${bba}/tech-js-node_modules-${pkg.name}`, pkg.name], true)
+  await spawn('git', '', ['add', pkg.name], true)
+  await spawn('git', '', ['commit', '-m', `update ${pkg.name}`], true)
   await spawn('git', '', ['push', guser, guser], true)
   process.chdir(getPath('guld-docs'))
   await spawn('npm', '', ['run', 'build-tech'], true)
   process.chdir(path.join(os.homedir(), 'io', 'http', 'guld.tech'))
   await spawn('git', '', ['add', '-A'], true)
-  await spawn('git', '', ['commit', '-m', `built ${pname}`], true)
+  await spawn('git', '', ['commit', '-m', `built ${pkg.name}`], true)
   await spawn('git', '', ['push', guser, guser], true)
 }
 
-async function deprecate (guser, pname, message = 'No longer maintained.') {
+async function deprecate (guser, pkg, message = 'No longer maintained.') {
   fs = fs || await getFS()
-  pname = pname || (await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })).name
+  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })
   guser = guser || await getName()
-  var pkgpath = getPath(pname)
+  var pkgpath = getPath(pkg.name)
   process.chdir(pkgpath)
-  var pkg = await genPackage(guser, pname)
+  pkg = await genPackage(guser, pkg)
   if (pkg.description.indexOf('DEPRECATED') === -1) {
     pkg.description = `DEPRECATED ${message}\n\n${pkg.description}`
     await fs.writeFile('package.json', `${JSON.stringify(pkg, null, 2)}\n`)
@@ -462,11 +458,37 @@ async function deprecate (guser, pname, message = 'No longer maintained.') {
     await spawn('git', '', ['commit', '-m', 'deprecated'], true)
     await spawn('git', '', ['push', guser, guser], true)
   }
-  await spawn('npm', '', ['deprecate', pname, message], true)
+  await spawn('npm', '', ['deprecate', pkg.name, message], true)
+}
+
+async function upgrade (pkg) {
+  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })
+  process.chdir(getPath(pkg.name))
+  var upgraded = await ncu.run({
+    packageFile: 'package.json',
+    silent: true,
+    jsonUpgraded: true,
+    upgrade: true
+  })
+  await spawn('npm', '', ['upgrade'], true)
+  await spawn('git', '', ['add', 'package.json'], true)
+  await spawn('git', '', ['commit', '-m', 'upgrade deps'], true)
+  return upgraded
+}
+
+async function gotopkg (pname) {
+  fs = fs || await getFS()
+  if (pname && typeof pname === 'string') {
+    var gpath = getPath(pname)
+    await fs.mkdirp(gpath)
+    process.chdir(gpath)
+  } else pname = process.cwd().replace(getPath(''), '').replace('/', '')
+  return pname
 }
 
 module.exports = {
   getPath: getPath,
+  gotopkg: gotopkg,
   getMetaPkg: getMetaPkg,
   genBadges: genBadges,
   genReadme: genReadme,
@@ -480,5 +502,6 @@ module.exports = {
   version: version,
   publish: publish,
   deprecate: deprecate,
+  upgrade: upgrade,
   readThenClose: readThenClose
 }

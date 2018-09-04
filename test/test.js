@@ -1,4 +1,5 @@
 /* eslint-env mocha */
+process.env.GULDNAME = 'guld'
 const chai = require('chai')
 const guldSDK = require('../')
 var realReadme
