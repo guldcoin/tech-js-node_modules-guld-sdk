@@ -53,7 +53,7 @@ async function getServices (guser, pkg) {
   var gha = await getAlias(guser, 'github')
   var bba = await getAlias(guser, 'bitbucket')
   fs = fs || await getFS()
-  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json')
+  pkg = await gogetpkg(pkg)
   return {
     npm: {
       name: 'node package manager',
@@ -134,7 +134,7 @@ async function getServices (guser, pkg) {
 async function genBadges (guser, pkg) {
   fs = fs || await getFS()
   guser = guser || await getName()
-  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json')
+  pkg = await gogetpkg(pkg)
   var services = await getServices(guser, pkg)
   var badges = `[![source](https://img.shields.io/badge/source-bitbucket-blue.svg)](${pkg.repository}) [![issues](https://img.shields.io/badge/issues-bitbucket-yellow.svg)](${pkg.repository}/issues) [![documentation](https://img.shields.io/badge/docs-guld.tech-green.svg)](${pkg.homepage})
 
@@ -153,7 +153,7 @@ async function genBadges (guser, pkg) {
 
 async function genReadme (pkg, readme) {
   fs = fs || await getFS()
-  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json')
+  pkg = await gogetpkg(pkg)
   readme = readme || await readThenClose(`${process.cwd()}/README.md`, 'utf-8')
   var bdgs = await genBadges()
   var install = `### Install
@@ -242,7 +242,7 @@ function getRepository (pname, bba) {
 
 async function genPackage (guser, pkg) {
   fs = fs || await getFS()
-  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} }) || {}
+  pkg = await gogetpkg(pkg)
   guser = guser || await getName()
   var bba = await getAlias(guser, 'bitbucket')
   pkg.readme = 'README.md'
@@ -311,7 +311,7 @@ async function genPackage (guser, pkg) {
 
 async function genEslint (pkg, rc) {
   fs = fs || await getFS()
-  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} }) || {}
+  pkg = await gogetpkg(pkg)
   rc = rc || await readThenClose(`${process.cwd()}/.eslintrc.json`, 'json').catch(e => { return {} }) || {}
   rc.extends = rc.extends || []
   if (rc.extends.indexOf('eslint:recommended') === -1) rc.extends.push('eslint:recommended')
@@ -331,7 +331,7 @@ async function genEslint (pkg, rc) {
 }
 
 async function genTravis (pkg) {
-  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json')
+  pkg = await gogetpkg(pkg)
   thisMetaPkg = await getMetaPkg()
   return await readThenClose(`${process.cwd()}/.travis.yml`, 'utf-8').catch(e => { return thisMetaPkg.travis.replace(/guld-sdk/g, pkg.name) }) || thisMetaPkg.travis.replace(/guld-sdk/g, pkg.name)
 }
@@ -353,7 +353,7 @@ async function genNpmignore () {
 
 async function genWepack (pkg) {
   fs = fs || await getFS()
-  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} }) || {}
+  pkg = await gogetpkg(pkg)
   var defaultCfg = `module.exports = [
   {
     mode: 'production',
@@ -375,11 +375,10 @@ async function genWepack (pkg) {
 
 async function init (guser, pkg) {
   fs = fs || await getFS()
-  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })
+  pkg = await gogetpkg(pkg)
   guser = guser || await getName()
   var pdir = getPath(pkg.name)
   await fs.mkdirp(path.join(pdir, 'test'))
-  process.chdir(pdir)
   await spawn('git', '', ['init'], true)
   await spawn('guld-git-remote', '', ['delete'], true)
   await spawn('guld-git-remote', '', ['add'], true)
@@ -390,7 +389,7 @@ async function init (guser, pkg) {
   await fs.writeFile('package.json', `${JSON.stringify(pkg, null, 2)}\n`)
   await fs.writeFile('.eslintrc.json', `${JSON.stringify(await genEslint(pkg), null, 2)}\n`)
   await fs.writeFile('README.md', await genReadme(pkg))
-  await fs.writeFile('.travis.yml', await genTravis(pkg.name))
+  await fs.writeFile('.travis.yml', await genTravis(pkg))
   await fs.writeFile('LICENSE', await genLicense(guser))
   await fs.writeFile('.gitignore', await genGitignore())
   await fs.writeFile('.npmignore', await genNpmignore())
@@ -414,19 +413,17 @@ async function init (guser, pkg) {
 
 async function version (guser, pkg, level = 'patch') {
   fs = fs || await getFS()
-  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })
+  pkg = await gogetpkg(pkg)
   guser = guser || await getName()
-  process.chdir(getPath(pkg.name))
   await spawn('npm', '', ['version', level], true)
   await publish(guser, pkg)
 }
 
 async function publish (guser, pkg) {
   fs = fs || await getFS()
-  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })
+  pkg = await gogetpkg(pkg)
   guser = guser || await getName()
   var bba = await getAlias(guser, 'bitbucket')
-  process.chdir(getPath(pkg.name))
   await spawn('npm', '', ['publish'], true)
   await spawn('git', '', ['push', guser, guser], true)
   process.chdir(getPath(''))
@@ -445,10 +442,8 @@ async function publish (guser, pkg) {
 
 async function deprecate (guser, pkg, message = 'No longer maintained.') {
   fs = fs || await getFS()
-  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })
+  pkg = await gogetpkg(pkg)
   guser = guser || await getName()
-  var pkgpath = getPath(pkg.name)
-  process.chdir(pkgpath)
   pkg = await genPackage(guser, pkg)
   if (pkg.description.indexOf('DEPRECATED') === -1) {
     pkg.description = `DEPRECATED ${message}\n\n${pkg.description}`
@@ -462,8 +457,7 @@ async function deprecate (guser, pkg, message = 'No longer maintained.') {
 }
 
 async function upgrade (pkg) {
-  pkg = pkg || await readThenClose(`${process.cwd()}/package.json`, 'json').catch(e => { return {} })
-  process.chdir(getPath(pkg.name))
+  pkg = await gogetpkg(pkg)
   var upgraded = await ncu.run({
     packageFile: 'package.json',
     silent: true,
@@ -480,15 +474,24 @@ async function gogetpkg (pkg) {
   fs = fs || await getFS()
   if (pkg && pkg.name && typeof pkg.name === 'string') {
     var gpath = getPath(pkg.name)
-    return readThenClose(`${gpath}/package.json`, 'json').then(async pkg => {
-      process.chdir(gpath)
-      return pkg
+    return readThenClose(`${gpath}/package.json`, 'json').then(async pack => {
+      if (pack) {
+        process.chdir(gpath)
+        return pack
+      } else {
+        await fs.mkdirp(gpath)
+        process.chdir(gpath)
+        return pkg
+      }
     }).catch(async e => {
       await fs.mkdirp(gpath)
       process.chdir(gpath)
       return pkg
     })
-  } else return { name: process.cwd().replace(getPath(''), '').replace('/', '') }
+  } else {
+    var pname = process.cwd().replace(getPath(''), '').replace('/', '')
+    return gogetpkg({ name: pname })
+  }
 }
 
 module.exports = {

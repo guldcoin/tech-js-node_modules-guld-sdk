@@ -9,6 +9,9 @@ describe('guld-sdk', function () {
   before(async () => {
     realReadme = await guldSDK.readThenClose('README.md', 'utf-8')
   })
+  beforeEach(() => {
+    process.chdir(guldSDK.getPath('guld-sdk'))
+  })
   it('getMetaPkg', async function () {
     thisMetaPkg = await guldSDK.getMetaPkg()
     chai.assert.exists(thisMetaPkg.pkg)
@@ -21,6 +24,20 @@ describe('guld-sdk', function () {
     chai.assert.isAbove(thisMetaPkg.license.length, 0)
     chai.assert.isAbove(thisMetaPkg.travis.length, 0)
     chai.assert.isAbove(thisMetaPkg.gitignore.length, 0)
+  })
+  it('gogetpkg no args', async function () {
+    var pkg = await guldSDK.gogetpkg()
+    chai.assert.deepEqual(pkg, thisMetaPkg.pkg)
+  })
+  it('gogetpkg new name only', async function () {
+    var pkg = await guldSDK.gogetpkg({ name: 'guld-xyz' })
+    chai.assert.equal(pkg.name, 'guld-xyz')
+    chai.assert.equal(Object.keys(pkg).length, 1)
+  })
+  it('gogetpkg other pkg by name', async function () {
+    var pkg = await guldSDK.gogetpkg({ name: 'guld-env' })
+    chai.assert.equal(pkg.name, 'guld-env')
+    chai.assert.exists(pkg.description)
   })
   it('genBadges', async function () {
     var badges = await guldSDK.genBadges('guld')
