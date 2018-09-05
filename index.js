@@ -291,8 +291,8 @@ async function genPackage (guser, pkg) {
   } else if (isApp(pkg.name)) {
     if (pkg.keywords.indexOf('app') === -1) pkg.keywords.push('app')
     pkg.scripts.preinstall = 'npm link mochify; npm link puppeteer'
-    if (!pkg.devDependencies.hasOwnProperty('mochify')) pkg.devDependencies['mochify'] = '^0.0.1'
-    if (!pkg.devDependencies.hasOwnProperty('puppeteer')) pkg.devDependencies['puppeteer'] = '^0.0.1'
+    if (!pkg.devDependencies.hasOwnProperty('mochify')) pkg.devDependencies['mochify'] = '^5.8.1'
+    if (!pkg.devDependencies.hasOwnProperty('puppeteer')) pkg.devDependencies['puppeteer'] = '^1.7.0'
   } else {
     if (pkg.keywords.indexOf('node') >= 0) {
       pkg.main = pkg.main || 'index.js'
@@ -300,9 +300,9 @@ async function genPackage (guser, pkg) {
     if (pkg.keywords.indexOf('browser') >= 0) {
       pkg.browser = pkg.browser || `${pkg.name}.min.js`
       pkg.scripts.build = 'webpack'
-      if (!pkg.devDependencies.hasOwnProperty('webpack')) pkg.devDependencies['webpack'] = '^0.0.1'
-      if (!pkg.devDependencies.hasOwnProperty('mochify')) pkg.devDependencies['mochify'] = '^0.0.1'
-      if (!pkg.devDependencies.hasOwnProperty('puppeteer')) pkg.devDependencies['puppeteer'] = '^0.0.1'
+      if (!pkg.devDependencies.hasOwnProperty('webpack')) pkg.devDependencies['webpack'] = '^4.17.2'
+      if (!pkg.devDependencies.hasOwnProperty('mochify')) pkg.devDependencies['mochify'] = '^5.8.1'
+      if (!pkg.devDependencies.hasOwnProperty('puppeteer')) pkg.devDependencies['puppeteer'] = '^1.7.0'
       pkg.eslintIgnore = pkg.eslintIgnore || []
       if (pkg.eslintIgnore.indexOf('*.min.js') === -1) pkg.eslintIgnore.push('*.min.js')
     } else if (pkg.browser) delete pkg.browser
@@ -436,6 +436,7 @@ async function publish (guser, pkg) {
   process.chdir(getPath(''))
   await spawn('git', '', ['init'], true)
   await spawn('git', '', ['submodule', 'add', `https://bitbucket.org/${bba}/tech-js-node_modules-${pkg.name}`, pkg.name], true)
+  await spawn('git', '', ['submodule', 'set-url', `https://bitbucket.org/${bba}/tech-js-node_modules-${pkg.name}`, pkg.name], true)
   await spawn('git', '', ['add', pkg.name], true)
   await spawn('git', '', ['commit', '-m', `update ${pkg.name}`], true)
   await spawn('git', '', ['push', guser, guser], true)
