@@ -208,7 +208,7 @@ require('${pkg.name}')
 \`\`\`
 `
   } else {
-    var re = new RegExp('#{1,3} Usage[#\\s\\w=+*,(){}\\[\\]!<>&?$`"\'.\\/:@-]*(?=(\\n#{1,3} ))')
+    var re = new RegExp('#{1,3} Usage[#\\s\\w=+*,(){}\\[\\]\\(\\)\\|!<>&?$`"\'.\\/:@-]*(?=(\\n#{1,3} ))')
     var usages = re.exec(readme)
     if (usages) usage = re.exec(readme)[0].replace(/#{1,2}$/, '').replace('\n#\n', '\n')
     else usage = ''
