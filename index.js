@@ -465,7 +465,7 @@ async function deprecate (guser, pkg, message = 'No longer maintained.') {
 }
 
 async function upgrade (pkg) {
-  pkg = await gogetpkg(pkg)
+  await gogetpkg(pkg)
   var upgraded = await ncu.run({
     packageFile: 'package.json',
     silent: true,
